@@ -3,13 +3,13 @@
     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-US">
 <head>
-<title>Publication Title CHANGE ME</title>
+<title>Deploying maven artifacts into your own artifact repository</title>
 <meta name="generator" content=
 "HTML Tidy for Linux/x86 (vers 1st November 2003), see www.w3.org" />
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="copyright" content=
 "Copyright &#169; 2005-2010 W3C (MIT, ERCIM, Keio)" />
-<meta name="duration" content="60" />
+<meta name="duration" content="5" />
 <meta name="font-size-adjustment" content="0" />
 <link rel="stylesheet" href="styles/slidy.css" type="text/css" />
 <link rel="stylesheet" href="styles/openstack.css" type="text/css" />
@@ -33,21 +33,118 @@ src="graphics/openstack-cloud-software-horizontal-small.png" /></div>
   <img class="hidden" src="graphics/bullet-nofold-dim.gif" alt="" />
   <img class="hidden" src="graphics/bullet-unfold-dim.gif" alt="" />
   <img src="graphics/openstack-cloud-software-vertical-large.png" alt="OpenStack logo" class="cover" />
-  <h1>Publication Title CHANGE ME<br />
-  <span class="smaller">Publication SubTitle CHANGE ME</span></h1>
+  <h1>Deploying maven artifacts into your own artifact repository<br /></h1>
+  <span class="smaller">A practical approach with Sonatype Nexus OSS</span></h1>
   <hr />
-  <div class="smaller">Your Name CHANGE ME
-    &lt;<a href="mailto:changeme@example.com">changeme@example.com</a>&gt;</div>
+  <div class="smaller">Ricardo Carrillo Cruz
+    &lt;<a href="mailto:ricardo.carrillo.cruz@gmail.com">ricardo.carrillo.cruz@gmail.com</a>&gt;, HP</div>
 </div>
 
 <div class="slide">
-  <h1>OpenStack</h1>
+  <h1>Upstream Maven capabilities</h1>
+    <div style="float:left;width:50%;height:100%">
+      <p>
+        <a href="http://git.openstack.org/cgit/openstack-infra/project-config/tree/jenkins/jobs/maven-plugin-jobs.yaml"> maven-plugin-jobs.yaml</a>
+      </p>
+      <object data="http://git.openstack.org/cgit/openstack-infra/project-config/plain/jenkins/jobs/maven-plugin-jobs.yaml" style="width:100%;height:70%" ></object>
+    </div>
+    <div style="float:right;width:50%">
+      <p>
+      <ul class="incremental">
+        <li>Build single module maven projects</li>
+        <li>Maven projects expected to create only one artifact</li>
+        <li>Upload to Maven Central</li>
+        <li>Maven uses global settings.xml file</li> 
+      </ul>
+      </p>
+    </div>
+</div>
 
-  <p>This is the first slide. CHANGE ME and add many more.</p>
+<div class="slide">
+  <h1>Requirements for multi-module maven projects builds with on-premise artifact repository</h1>
+    <p>
+      <ul class="incremental">
+        <li>Open-source artifact repository with strong community support</li>
+        <li>Multi-tenant isolation for artifacts and repositories/groups URLs</li>
+        <li>Support maven multi-module projects</li>
+        <li>Support multiple artifacts generation per project</li>
+        <li>Support for project specific settings.xml file</li>
+      </ul>
+      <pre class="incremental"><code style="font-size: 0.8em">
+- job-template:
+    name: 'post-{name}-maven-build'
+    node: '{node}'
+    tarball-site: '{tarball-site}'
 
-  <center>
-    <img src="images/openstack-software-diagram.png"/>
-  </center>
+    wrappers:
+      - timeout:
+          timeout: 60
+          fail: true
+      - timestamps
+
+    builders:
+      - gerrit-git-prep
+      - maven-properties
+      - inject:
+          properties-file: maven.properties
+      - maven-target:
+          maven-version: Maven3
+          pom: pom.xml
+          goals: 'clean deploy'
+          settings: m2/settings.xml
+          properties:
+            - project-version=${{PROJECT_VER}}
+            - altDeploymentRepository=snapshots::default::file:///${{WORKSPACE}}/local-deploy
+            - skipTests=true
+
+    publishers:
+      - console-log
+      - scp:
+          site: '{tarball-site}'
+          files:
+            - target: 'ci/{name}/${{PROJECT_VER}}/'
+              source: 'local-deploy/**'
+              keep-hierarchy: true
+              copy-after-failure: false
+
+- job-template:
+    name: 'post-{name}-nexus-deploy'
+    node: privileged-slave
+    tarball-site: '{tarball-site}'
+    maven-repo-id: '{maven-repo-id}'
+    maven-repo-url: '{maven-repo-url}'
+
+    wrappers:
+      - timeout:
+          timeout: 60
+          fail: true
+      - timestamps
+
+    builders:
+      - shell: |
+          #!/bin/bash -xe
+          /usr/local/jenkins/slave_scripts/gerrit-git-prep.sh https://review.test.net https://git.ci.test.net
+      - maven-properties
+      - inject:
+          properties-file: maven.properties
+      - shell: |
+          #!/bin/bash -xe
+          wget -r -l 0 -I ci/{name}/${{PROJECT_VER}} \
+              -R index.html*,${{PROJECT_VER}} \
+              -nH -np --cut-dirs=3 \
+              {tarball-site}/ci/{name}/${{PROJECT_VER}}/
+
+          for ARTIFACT_FILE_PATH in $(find local-deploy/ -type f ! \( -name "*.md5" -o -name "*.sha1" -o -name maven-metadata.xml \)); do
+            ARTIFACT_PACKAGE_PATH=$(echo $ARTIFACT_FILE_PATH | sed 's#local-deploy/##')
+            curl -K ~/.nexus-creds -T $ARTIFACT_FILE_PATH {maven-repo-url}/"$ARTIFACT_PACKAGE_PATH"
+          done
+
+          NEXUS_REPO_METADATA_URL=$(echo "{maven-repo-url}" | sed 's#content#service/local/metadata#')"/content"
+          curl -X DELETE -K ~/.nexus-creds $NEXUS_REPO_METADATA_URL
+    publishers:
+      - console-log
+      </code></pre>
+    </p>
 </div>
 
 <div class="slide">
