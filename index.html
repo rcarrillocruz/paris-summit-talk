@@ -3,7 +3,7 @@
     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-US">
 <head>
-<title>Deploying maven artifacts into your own artifact repository</title>
+<title>Building Java projects with on-premise artifact repository in Openstack CI</title>
 <meta name="generator" content=
 "HTML Tidy for Linux/x86 (vers 1st November 2003), see www.w3.org" />
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
@@ -33,44 +33,35 @@ src="graphics/openstack-cloud-software-horizontal-small.png" /></div>
   <img class="hidden" src="graphics/bullet-nofold-dim.gif" alt="" />
   <img class="hidden" src="graphics/bullet-unfold-dim.gif" alt="" />
   <img src="graphics/openstack-cloud-software-vertical-large.png" alt="OpenStack logo" class="cover" />
-  <h1>Deploying maven artifacts into your own artifact repository<br /></h1>
+  <h1>Building Java projects with on-premise artifact repository in Openstack CI<br /></h1>
   <span class="smaller">A practical approach with Sonatype Nexus OSS</span></h1>
   <hr />
   <div class="smaller">Ricardo Carrillo Cruz
-    &lt;<a href="mailto:ricardo.carrillo.cruz@gmail.com">ricardo.carrillo.cruz@gmail.com</a>&gt;, HP</div>
+    &lt;<a href="mailto:ricardo.carrillo.cruz@hp.com">ricardo.carrillo.cruz@hp.com</a>&gt;, HP</div>
 </div>
 
 <div class="slide">
-  <h1>Upstream Maven capabilities</h1>
-    <div style="float:left;width:50%;height:100%">
-      <p>
-        <a href="http://git.openstack.org/cgit/openstack-infra/project-config/tree/jenkins/jobs/maven-plugin-jobs.yaml"> maven-plugin-jobs.yaml</a>
-      </p>
-      <object data="http://git.openstack.org/cgit/openstack-infra/project-config/plain/jenkins/jobs/maven-plugin-jobs.yaml" type="text/html" style="width:100%;height:70%" ></object>
-    </div>
-    <div style="float:right;width:50%">
-      <p>
-      <ul class="incremental">
-        <li>Build single module maven projects</li>
-        <li>Maven projects expected to create only one artifact</li>
-        <li>Upload to Maven Central</li>
-        <li>Maven uses global settings.xml file</li> 
-      </ul>
-      </p>
-    </div>
-</div>
-
-<div class="slide">
-  <h1>Requirements for multi-module maven projects builds with on-premise artifact repository</h1>
+  <h1>Requirements</h1>
     <p>
-      <ul class="incremental">
+      <ul>
         <li>Open-source artifact repository with strong community support</li>
         <li>Multi-tenant isolation for artifacts and repositories/groups URLs</li>
         <li>Support maven multi-module projects</li>
         <li>Support multiple artifacts generation per project</li>
-        <li>Support for project specific settings.xml file</li>
+        <li>Support settings.xml per project</li>
       </ul>
-      <pre class="incremental"><code style="font-size: 0.8em">
+    </p>
+</div>
+
+<div class="slide">
+  <h1>Java project build and deployment workflow</h1>
+  <p><img src="graphics/nexus-deploy.jpeg"/></p>
+</div>
+
+<div class="slide">
+  <h1>Implementation based upon upstream maven-plugin-jobs templates</h1>
+  <p>
+    <pre><code style="font-size: 0.8em">
 - job-template:
     name: 'post-{name}-maven-build'
     node: '{node}'
@@ -143,26 +134,30 @@ src="graphics/openstack-cloud-software-horizontal-small.png" /></div>
           curl -X DELETE -K ~/.nexus-creds $NEXUS_REPO_METADATA_URL
     publishers:
       - console-log
-      </code></pre>
-    </p>
+    </code></pre>
+  </p>
 </div>
 
-<div class="slide">
-  <h1>Artifacts deployment to Nexus workflow</h1>
-  <p><img src="graphics/nexus-deploy.jpeg"/></p>
-</div>
 <div class="slide">
   <h1>Thanks!</h1>
 
-  <p><img src="images/stack-o-pancakes-150x150.png"/>
+  <p>
+    Please contribute to Openstack CI and remember, Openstack CI is not just for Openstack or Python projects, it can be used for ANY project!
+  </p>
 
   <p>
     These slides available at: <a href="https://github.com/rcarrillocruz/paris-summit-talk/tree/paris-talk">https://github.com/rcarrillocruz/paris-summit-talk/tree/paris-talk</a>
   </p>
   <p>
-    Upstream change in review for contributing this work at: <a href="https://review.openstack.org/#/c/125011/">https://review.openstack.org/#/c/125011/</a>
+    Upstream change in review for this work at: <a href="https://review.openstack.org/#/c/125011/">https://review.openstack.org/#/c/125011/</a>
   </p>
 
+  <p> Contact details:<br><br>
+    Work: <a href="mailto:ricardo.carrillo.cruz@hp.com">ricardo.carrillo.cruz@hp.com</a> <br>
+    Personal: <a href="mailto:ricardo.carrillo.cruz@gmail.com">ricardo.carrillo.cruz@gmail.com</a> <br> 
+    Twitter: <a href="https://twitter.com/rcarrillocruz">https://twitter.com/rcarrillocruz</a> <br>
+    IRC handle: rcarrillocruz
+  </p>
 </div>
 
 </body>
